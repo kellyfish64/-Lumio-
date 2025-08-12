@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&lt;新竹市專場&gt;114年SMART Lumio 互動教學軟體研習資訊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Unified Teal & Amber -->
+    <!-- Application Structure Plan: 採用單頁式儀表板(Dashboard)設計。核心互動為頂部的「研習切換器」(Toggle Buttons)，讓使用者在「線上」與「實體」場次間自由切換。結構依序為：1.主視覺區。2.前言區，介紹研習目的與軟體特色。3.研習切換器。4.動態內容區，此區所有資訊（關鍵資訊卡、課程大綱、報名區）皆會根據切換器選擇而即時更新。此結構將兩個獨立的活動整合於單一介面，透過互動提供清晰的比較與引導，優化使用者體驗。 -->
+    <!-- Visualization & Content Choices: 報告資訊: 課程大綱 -> 目標: 資訊傳達 -> 呈現方式: 動態更新的列表 -> 互動: 根據切換器選擇顯示對應大綱 -> 理由: 在有限空間內清晰呈現不同場次的內容 -> 實現方式: Vanilla JS。 -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        .tab-active {
+            background-color: #0d9488; /* teal-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .tab-inactive {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #334155; /* slate-700 */
+        }
+        .content-panel {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-5xl mx-auto py-12 px-4 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-800 mb-2">&lt;新竹市專場&gt;114年SMART Lumio 互動教學軟體研習資訊</h1>
+        </div>
+    </header>
+
+    <!-- Preface Section -->
+    <section id="preface" class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">研習目的與軟體特色</h2>
+            <p class="text-lg text-slate-600 mb-10">
+                本系列研習旨在協助教師掌握 SMART Lumio 這款強大的互動教學軟體，將數位科技無縫融入課堂。Lumio 能將您現有的教材轉化為引人入勝的互動、遊戲與協作活動，有效提升學生參與度與學習成效。無論您是初次接觸或希望深化應用，都能在此找到符合需求的學習路徑。
+            </p>
+            <div class="grid md:grid-cols-2 gap-8 text-left">
+                <div class="flex items-start space-x-4">
+                    <div class="text-3xl pt-1">🔄</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-teal-700">整合現有教材</h4>
+                        <p class="text-slate-600">輕鬆匯入您熟悉的 PDF, PowerPoint, Google Slides 等檔案，無需重新備課。</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-4">
+                    <div class="text-3xl pt-1">🎮</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-teal-700">遊戲化學習</h4>
+                        <p class="text-slate-600">提供多款遊戲模板，將課程重點轉化為有趣的團隊競賽，激發學習動機。</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-4">
+                    <div class="text-3xl pt-1">💡</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-teal-700">多元互動工具</h4>
+                        <p class="text-slate-600">包含個人習作、小組協作白板、即時投票等功能，滿足各種教學情境。</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-4">
+                    <div class="text-3xl pt-1">🤖</div>
+                    <div>
+                        <h4 class="font-bold text-lg text-teal-700">AI 智能省時</h4>
+                        <p class="text-slate-600">運用 AI 技術快速生成教學活動與評量，讓您更專注於教學本身。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workshop Toggle -->
+    <nav class="sticky top-0 bg-white/80 backdrop-blur-sm z-10 py-4 shadow-md">
+        <div class="max-w-md mx-auto p-1 bg-slate-200 rounded-full flex items-center justify-center space-x-2">
+            <button id="btn-online" class="w-full text-center font-semibold py-2 px-4 rounded-full transition-all duration-300">線上研習</button>
+            <button id="btn-physical" class="w-full text-center font-semibold py-2 px-4 rounded-full transition-all duration-300">實體研習</button>
+        </div>
+    </nav>
+
+    <!-- Dynamic Content Area -->
+    <main id="content-panel" class="max-w-5xl mx-auto p-4 md:p-8 content-panel">
+
+        <h2 id="workshop-title" class="text-3xl font-bold text-center text-slate-800 mb-12"></h2>
+
+        <!-- Key Info Cards -->
+        <section class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 text-center">
+            <div class="bg-white p-6 rounded-xl shadow-md border">
+                <div class="text-4xl mb-3">🗓️</div>
+                <h3 class="text-lg font-bold text-slate-800">日期與時間</h3>
+                <p id="workshop-date" class="text-slate-600"></p>
+                <p id="workshop-time" class="text-slate-600"></p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border">
+                <div class="text-4xl mb-3">📍</div>
+                <h3 class="text-lg font-bold text-slate-800">地點/方式</h3>
+                <div id="workshop-location"></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border">
+                <div class="text-4xl mb-3">👨‍🏫</div>
+                <h3 class="text-lg font-bold text-slate-800">主講人</h3>
+                <p id="workshop-speaker" class="text-slate-600"></p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border">
+                <div class="text-4xl mb-3">👥</div>
+                <h3 class="text-lg font-bold text-slate-800">參加對象</h3>
+                <p id="workshop-attendees" class="text-slate-600"></p>
+            </div>
+        </section>
+
+        <!-- Agenda Section -->
+        <section class="mb-16">
+            <div class="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-lg border">
+                 <h3 class="text-2xl font-bold text-slate-800 mb-4 text-center">課程大綱</h3>
+                 <ul id="workshop-agenda" class="space-y-3 list-inside">
+                     <!-- Agenda items will be injected by JS -->
+                 </ul>
+            </div>
+        </section>
+
+        <!-- Registration Section -->
+        <section id="register" class="text-center bg-gradient-to-br from-teal-50 to-amber-50 py-12 px-4 rounded-2xl shadow-inner border">
+             <h2 class="text-3xl font-bold text-teal-800">立即預約您的席位</h2>
+             <p class="text-slate-600 my-4">名額有限，請至新竹市教師研習護照報名。</p>
+             
+             <div class="bg-white/70 p-6 rounded-lg my-6 inline-block shadow-sm">
+                 <p class="text-slate-700">研習代號</p>
+                 <div class="flex items-center justify-center space-x-4 mt-2">
+                     <span id="workshop-code" class="text-2xl font-bold text-slate-900 tracking-widest"></span>
+                     <button id="copy-btn" class="bg-slate-200 text-slate-700 text-sm py-1 px-3 rounded-md hover:bg-slate-300 transition-all">複製</button>
+                 </div>
+             </div>
+
+             <div>
+                 <a id="register-link" href="#" target="_blank" class="bg-teal-600 text-white font-bold py-3 px-12 rounded-full hover:bg-teal-700 transition-all text-lg shadow-lg inline-block">
+                     前往報名系統
+                 </a>
+                 <div id="qr-code-container" class="mt-4">
+                    <p class="text-sm text-slate-600">或掃描 QR Code 報名</p>
+                    <img id="register-qr" src="" alt="報名網址 QR Code" class="mx-auto mt-2 rounded-lg border-4 border-white shadow-md">
+                 </div>
+             </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center p-6 bg-slate-800 text-slate-400 mt-16">
+        <p>&copy; 114年 嘉穎科技 教師增能系列研習</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const workshopData = {
+                online: {
+                    title: '掌握 Lumio 教學的新節奏',
+                    date: '114年9月10日 (三)',
+                    time: '13:30 - 15:30',
+                    locationHTML: `<p class="text-slate-600">Google Meet 線上會議</p><a href="https://meet.google.com/xvc-zhxx-svg" target="_blank" class="text-teal-600 hover:text-teal-800 font-semibold">點此進入會議室</a>`,
+                    speaker: '嘉穎科技 何家鳳 老師',
+                    attendees: '資訊組長及有興趣的老師',
+                    agenda: [
+                        '解析全新開課流程與「班級會議」功能',
+                        '將簡報轉換為互動式學習內容',
+                        '結合AI快速設計測驗與遊戲活動',
+                        '活用語音與閱讀工具提升學習力'
+                    ],
+                    code: '1142078',
+                    link: 'https://study.hc.edu.tw/Modules/Study/GetSingleInternalStudy.aspx?StudyID=1142078'
+                },
+                physical: {
+                    title: '教學策略 × Lumio 整合實作',
+                    date: '114年9月16日 (二)',
+                    time: '13:30 - 15:30',
+                    locationHTML: `<p class="text-slate-600">教師研習中心</p><p class="text-slate-600">2F電腦教室</p>`,
+                    speaker: '嘉穎科技 何家鳳 老師',
+                    attendees: '資訊組長及有興趣的老師',
+                    agenda: [
+                        '全新「班級會議」串聯備課、授課與作業管理',
+                        '搭配教學策略，靈活應用 Lumio 核心功能',
+                        '現場實作與教學活動設計分享'
+                    ],
+                    code: '1142079',
+                    link: 'https://pse.is/7zfb98'
+                }
+            };
+
+            const ui = {
+                title: document.getElementById('workshop-title'),
+                date: document.getElementById('workshop-date'),
+                time: document.getElementById('workshop-time'),
+                location: document.getElementById('workshop-location'),
+                speaker: document.getElementById('workshop-speaker'),
+                attendees: document.getElementById('workshop-attendees'),
+                agenda: document.getElementById('workshop-agenda'),
+                code: document.getElementById('workshop-code'),
+                link: document.getElementById('register-link'),
+                qr: document.getElementById('register-qr'),
+                btnOnline: document.getElementById('btn-online'),
+                btnPhysical: document.getElementById('btn-physical'),
+                copyBtn: document.getElementById('copy-btn'),
+                contentPanel: document.getElementById('content-panel')
+            };
+
+            function updateUI(type) {
+                const data = workshopData[type];
+                
+                ui.contentPanel.style.opacity = 0;
+
+                setTimeout(() => {
+                    ui.title.textContent = data.title;
+                    ui.date.textContent = data.date;
+                    ui.time.textContent = data.time;
+                    ui.location.innerHTML = data.locationHTML;
+                    ui.speaker.textContent = data.speaker;
+                    ui.attendees.textContent = data.attendees;
+                    
+                    ui.agenda.innerHTML = '';
+                    data.agenda.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-start';
+                        li.innerHTML = `<span class="text-teal-500 font-bold mr-3 mt-1">✓</span><span>${item}</span>`;
+                        ui.agenda.appendChild(li);
+                    });
+
+                    ui.code.textContent = data.code;
+                    ui.link.href = data.link;
+                    ui.qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.link)}`;
+
+                    if (type === 'online') {
+                        ui.btnOnline.classList.add('tab-active');
+                        ui.btnOnline.classList.remove('tab-inactive');
+                        ui.btnPhysical.classList.add('tab-inactive');
+                        ui.btnPhysical.classList.remove('tab-active');
+                    } else {
+                        ui.btnPhysical.classList.add('tab-active');
+                        ui.btnPhysical.classList.remove('tab-inactive');
+                        ui.btnOnline.classList.add('tab-inactive');
+                        ui.btnOnline.classList.remove('tab-active');
+                    }
+                    ui.contentPanel.style.opacity = 1;
+                }, 300);
+            }
+
+            ui.btnOnline.addEventListener('click', () => updateUI('online'));
+            ui.btnPhysical.addEventListener('click', () => updateUI('physical'));
+            
+            ui.copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(ui.code.innerText).then(() => {
+                    ui.copyBtn.innerText = '已複製!';
+                    setTimeout(() => { ui.copyBtn.innerText = '複製'; }, 2000);
+                }).catch(err => { console.error('無法複製: ', err); });
+            });
+
+            updateUI('online');
+        });
+    </script>
+</body>
+</html>
